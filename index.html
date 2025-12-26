@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Bagi Teks</title>
+  <script src="https://unpkg.com/yjs"></script>
+  <script src="https://unpkg.com/y-webrtc"></script>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    textarea { width: 100%; height: 200px; font-size: 16px; }
+  </style>
+</head>
+<body>
+
+<h2>RAMA GANTENG</h2>
+<textarea id="editor" placeholder="Ketik di sini..."></textarea>
+
+<script>
+  const ydoc = new Y.Doc();
+
+  // 🔑 Ganti "ruang-text-1" kalau mau room lain
+  const provider = new Y.WebrtcProvider('ruang-text-1', ydoc);
+
+  const ytext = ydoc.getText('shared-text');
+  const textarea = document.getElementById('editor');
+
+  // Update textarea saat ada perubahan
+  ytext.observe(() => {
+    textarea.value = ytext.toString();
+  });
+
+  // Update shared text saat mengetik
+  textarea.addEventListener('input', () => {
+    ydoc.transact(() => {
+      ytext.delete(0, ytext.length);
+      ytext.insert(0, textarea.value);
+    });
+  });
+</script>
+
+</body>
+</html>
