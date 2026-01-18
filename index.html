@@ -1,69 +1,230 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Live Text Rama</title>
+    <meta charset="UTF-8">
+    <title>F'Ve Drain Sortir Data</title>
 
-  <!-- Library stabil -->
-  <script src="https://cdn.jsdelivr.net/npm/yjs@13.6.9/dist/yjs.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/y-webrtc@10.2.5/dist/y-webrtc.js"></script>
+    <style>
+    * {
+        box-sizing: border-box;
+    }
 
-  <style>
     body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f5f5f5;
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        padding: 30px;
+        color: #d0d0d0;
     }
+
+    h2 {
+        color: #e0e0e0;
+        margin-bottom: 15px;
+    }
+
     textarea {
-      width: 100%;
-      height: 250px;
-      font-size: 16px;
-      padding: 10px;
+        width: 100%;
+        height: 280px;
+        padding: 15px;
+        border-radius: 12px;
+        border: 1px solid #2f3b45;
+        background: #121b22;
+        color: #e6e6e6;
+        font-family: Consolas, monospace;
+        font-size: 14px;
+        resize: vertical;
+        outline: none;
+        box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
     }
-  </style>
+
+    textarea::placeholder {
+        color: #7a8a99;
+    }
+
+    button {
+        padding: 12px 18px;
+        margin: 15px 8px 15px 0;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: bold;
+        color: #eaf4ff;
+        background: linear-gradient(135deg, #3a7bd5, #3a6073);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        transition: all 0.2s ease;
+    }
+
+    button:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+    }
+
+    .card {
+        background: #121b22;
+        border-radius: 16px;
+        padding: 18px;
+        margin-top: 20px;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+        border: 1px solid #26323b;
+    }
+
+    .info-title {
+        font-weight: bold;
+        color: #9fc9ff;
+        margin-bottom: 6px;
+        letter-spacing: 0.5px;
+    }
+
+    .info-block {
+        margin-bottom: 14px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #26323b;
+    }
+
+    .info-block:last-child {
+        border-bottom: none;
+    }
+
+    pre {
+        background: #0d141a;
+        padding: 14px;
+        border-radius: 12px;
+        font-size: 14px;
+        color: #d7e3ec;
+        overflow-x: auto;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
+    }
+
+    .highlight {
+        color: #8ab4f8;
+        font-weight: bold;
+    }
+</style>
+
 </head>
+
 <body>
 
-<h2>Live Text (Tanpa Login)</h2>
-<p>Buka link ini di 2 device → ketik → langsung terbaca</p>
+<h2>🔍 Filter ID F'Ve Drain</h2>
 
-<textarea id="editor" placeholder="Ketik di sini..."></textarea>
+<textarea id="inputData" placeholder="Tempelkan data di sini..."></textarea>
+
+<br>
+<button onclick="extractData()">🚀 Proses</button>
+<button onclick="exportTxt()">💾 Export TXT</button>
+
+<div class="card">
+    <div class="info-block">
+        <div class="info-title">MAC Address</div>
+        <span id="macAddress" class="highlight">-</span>
+    </div>
+
+    <div class="info-block">
+        <div class="info-title">HW Account Status</div>
+        <pre id="hwStatus">-</pre>
+    </div>
+
+    <div class="info-block">
+        <div class="info-title">Login Guest Code</div>
+        <span id="guestCode" class="highlight">-</span>
+    </div>
+
+    <div class="info-block">
+        <div class="info-title">Jumlah ID (key_local_login_day)</div>
+        <span id="idCount" class="highlight">0</span>
+    </div>
+</div>
+
+<div class="card">
+    <div class="info-title">Hasil ID</div>
+    <pre id="output"></pre>
+</div>
 
 <script>
-  // Buat dokumen Yjs
-  const ydoc = new Y.Doc();
+let resultIds = [];
 
-  // 🔴 INI SCRIPT YANG KURANG TADI (SIGNALING SERVER)
-  const provider = new Y.WebrtcProvider(
-    'ruang-text-1', // nama room (bebas tapi harus sama)
-    ydoc,
-    {
-      signaling: ['wss://signaling.yjs.dev']
-    }
-  );
+function extractData() {
+    const text = document.getElementById("inputData").value;
+    const lines = text.split(/\r?\n/);
 
-  // Debug status koneksi
-  provider.on('status', event => {
-    console.log('STATUS:', event.status);
-  });
+    const idSet = new Set();
+    let mac = null;
+    let guestCode = null;
 
-  const ytext = ydoc.getText('shared-text');
-  const textarea = document.getElementById('editor');
+    const hwData = {
+        0: { id: "", password: "" },
+        1: { id: "", password: "" },
+        2: { id: "", password: "" },
+        3: { id: "", password: "" }
+    };
 
-  // Update tampilan kalau ada perubahan dari device lain
-  ytext.observe(() => {
-    if (textarea.value !== ytext.toString()) {
-      textarea.value = ytext.toString();
-    }
-  });
+    lines.forEach(line => {
 
-  // Update teks saat mengetik
-  textarea.addEventListener('input', () => {
-    ydoc.transact(() => {
-      ytext.delete(0, ytext.length);
-      ytext.insert(0, textarea.value);
+        if (line.startsWith("local_mac_addr")) {
+            const parts = line.split("=");
+            if (parts[1]) mac = parts[1].trim();
+        }
+
+        if (line.startsWith("login_guest_code")) {
+            const parts = line.split("=");
+            if (parts[1]) guestCode = parts[1].trim();
+        }
+
+        const idMatch = line.match(/^key_local_login_day_(\d+)\s*=/);
+        if (idMatch) idSet.add(idMatch[1]);
+
+        let match = line.match(/^hw_account_id_(\d+)\s*=\s*(.*)$/);
+        if (match && hwData.hasOwnProperty(match[1])) {
+            hwData[match[1]].id = match[2].trim();
+        }
+
+        match = line.match(/^hw_account_password_(\d+)\s*=\s*(.*)$/);
+        if (match && hwData.hasOwnProperty(match[1])) {
+            hwData[match[1]].password = match[2].trim();
+        }
     });
-  });
+
+    resultIds = Array.from(idSet).sort((a, b) => Number(a) - Number(b));
+    document.getElementById("output").textContent = resultIds.join("\n");
+    document.getElementById("idCount").textContent = resultIds.length;
+
+    document.getElementById("macAddress").textContent =
+        mac ? mac : "Tidak ada alamat MAC";
+
+    let hwOutput = "";
+    for (let i = 0; i <= 3; i++) {
+        const status = (hwData[i].id && hwData[i].password) ? "true" : "false";
+        hwOutput += `hw ${i}: ${status}\n`;
+    }
+    document.getElementById("hwStatus").textContent = hwOutput;
+
+    document.getElementById("guestCode").textContent =
+        guestCode ? guestCode : "Tidak ada login guest code";
+}
+
+function exportTxt() {
+    if (resultIds.length === 0) {
+        alert("Belum ada data untuk diekspor.");
+        return;
+    }
+
+    const now = new Date();
+    const pad = n => n.toString().padStart(2, "0");
+
+    const tanggal = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}`;
+    const waktu   = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+
+    const fileName = `${resultIds.length}HASIL_SORTIT${tanggal}_${waktu}.txt`;
+
+    const blob = new Blob([resultIds.join("\n")], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    a.click();
+
+    URL.revokeObjectURL(url);
+}
 </script>
 
 </body>
