@@ -213,7 +213,7 @@ function exportTxt() {
     const tanggal = `${pad(now.getDate())}-${pad(now.getMonth() + 1)}-${now.getFullYear()}`;
     const waktu   = `${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
 
-    const fileName = `${resultIds.length}HASIL_SORTIT${tanggal}_${waktu}.txt`;
+    const fileName = `(${resultIds.length})HASIL_SORTIR${tanggal}_${waktu}.xls`;
 
     const blob = new Blob([resultIds.join("\n")], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
